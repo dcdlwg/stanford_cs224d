@@ -10,7 +10,10 @@ def normalizeRows(x):
     # Implement a function that normalizes each row of a matrix to have unit length
     
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
+    N = x.shape[0]
+    x /= np.sqrt(np.sum(x**2, axis=1)).reshape((N,1)) + 1e-30
+    
     ### END YOUR CODE
     
     return x
@@ -20,7 +23,7 @@ def test_normalize_rows():
     x = normalizeRows(np.array([[3.0,4.0],[1, 2]])) 
     # the result should be [[0.6, 0.8], [0.4472, 0.8944]]
     print x
-    assert (x.all() == np.array([[0.6, 0.8], [0.4472, 0.8944]]).all())
+    assert (np.amax(np.fabs(x - np.array([[0.6,0.8],[0.4472136,0.89442719]]))) <= 1e-6)
     print ""
 
 def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
@@ -50,7 +53,16 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     # assignment!                                                  
     
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
+    probabilities = softmax(predicted.dot(outputVectors.T))
+    cost = -np.log(probabilities[target])
+    delta = probabilities
+    delta[target] -= 1
+    N = delta.shape[0]
+    D = predicted.shape[0]
+    grad = delta.reshape((N,1)) * predicted.reshape((1,D))
+    gradPred = (delta.reshape((1,N)).dot(outputVectors)).flatten()
+    
     ### END YOUR CODE
     
     return cost, gradPred, grad
@@ -73,7 +85,47 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     # assignment!
     
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
+    grad = np.zeros(outputVectors.shape)
+    gradPred = np.zeros(predicted.shape)
+    
+    indices = [target]
+    for k in xrange(K):
+        newidx = dataset.sampleTokenIdx()
+        while newidx == target:
+            newidx = dataset.sampleTokenIdx()
+        indices += [newidx]
+        
+    labels = np.array([1] + [-1 for k in xrange(K)])
+    vecs = outputVectors[indices,:]
+    
+    t = sigmoid(vecs.dot(predicted) * labels)
+    cost = -np.sum(np.log(t))
+    
+    delta = labels * (t - 1)
+    gradPred = delta.reshape((1,K+1)).dot(vecs).flatten()
+    gradtemp = delta.reshape((K+1,1)).dot(predicted.reshape(
+        (1,predicted.shape[0])))
+    for k in xrange(K+1):
+        grad[indices[k]] += gradtemp[k,:]
+    
+#     t = sigmoid(predicted.dot(outputVectors[target,:]))
+#     cost = -np.log(t)
+#     delta = t - 1
+
+#     gradPred += delta * outputVectors[target, :]
+#     grad[target, :] += delta * predicted
+    
+#     for k in xrange(K):
+#         idx = dataset.sampleTokenIdx()
+        
+#         t = sigmoid(-predicted.dot(outputVectors[idx,:]))
+#         cost += -np.log(t)
+#         delta = 1 - t
+
+#         gradPred += delta * outputVectors[idx, :]
+#         grad[idx, :] += delta * predicted
+    
     ### END YOUR CODE
     
     return cost, gradPred, grad
@@ -106,7 +158,20 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     # assignment!
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
+    currentI = tokens[currentWord]
+    predicted = inputVectors[currentI, :]
+    
+    cost = 0.0
+    gradIn = np.zeros(inputVectors.shape)
+    gradOut = np.zeros(outputVectors.shape)
+    for cwd in contextWords:
+        idx = tokens[cwd]
+        cc, gp, gg = word2vecCostAndGradient(predicted, idx, outputVectors, dataset)
+        cost += cc
+        gradOut += gg
+        gradIn[currentI, :] += gp
+    
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
@@ -131,7 +196,19 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
+    # D = inputVectors.shape[1]
+    # predicted = np.zeros((D,))
+    
+    # indices = [tokens[cwd] for cwd in contextWords]
+    # for idx in indices:
+    #     predicted += inputVectors[idx, :]
+    
+    # cost, gp, gradOut = word2vecCostAndGradient(predicted, tokens[currentWord], outputVectors, dataset)
+    # gradIn = np.zeros(inputVectors.shape)
+    # for idx in indices:
+    #     gradIn[idx, :] += gp
+    
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
