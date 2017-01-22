@@ -54,7 +54,10 @@ class SoftmaxModel(Model):
     (Don't change the variable names)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    self.input_placeholder = tf.placeholder(
+        tf.float32, shape=(self.config.batch_size, self.config.n_features))
+    self.labels_placeholder = tf.placeholder(
+        tf.int32, shape=(self.config.batch_size, self.config.n_classes))
     ### END YOUR CODE
 
   def create_feed_dict(self, input_batch, label_batch):
@@ -79,7 +82,10 @@ class SoftmaxModel(Model):
       feed_dict: The feed dictionary mapping from placeholders to values.
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    feed_dict = {
+        self.input_placeholder: input_batch,
+        self.labels_placeholder: label_batch,
+    }
     ### END YOUR CODE
     return feed_dict
 
@@ -103,7 +109,9 @@ class SoftmaxModel(Model):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    optimizer = tf.train.GradientDescentOptimizer(self.config.lr)
+    global_step = tf.Variable(0, name='global_step', trainable=False)
+    train_op = optimizer.minimize(loss, global_step=global_step)
     ### END YOUR CODE
     return train_op
 
@@ -127,7 +135,15 @@ class SoftmaxModel(Model):
       out: A tensor of shape (batch_size, n_classes)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    n_features, n_classes = self.config.n_features, self.config.n_classes
+    with tf.name_scope('softmax_linear'):
+      weights = tf.Variable(
+          tf.zeros([n_features, n_classes]),
+          name='weights')
+      biases = tf.Variable(tf.zeros([n_classes]),
+                           name='biases')
+      logits = tf.matmul(input_data, weights) + biases
+      out = softmax(logits)
     ### END YOUR CODE
     return out
 
@@ -142,7 +158,8 @@ class SoftmaxModel(Model):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    # Add to the Graph the Ops for loss calculation.
+    loss = cross_entropy_loss(self.labels_placeholder, pred)
     ### END YOUR CODE
     return loss
 
